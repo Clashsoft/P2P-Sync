@@ -1,6 +1,6 @@
 package com.clashsoft.p2psync.net;
 
-import com.clashsoft.p2psync.Controller;
+import com.clashsoft.p2psync.Main;
 import com.clashsoft.p2psync.SyncEntry;
 
 import java.io.IOException;
@@ -9,14 +9,14 @@ import java.util.Map;
 
 public class ConnectionThread extends Thread
 {
-	private final Controller controller;
+	private final Main main;
 
 	private volatile boolean running = true;
 
-	public ConnectionThread(int port, Controller controller)
+	public ConnectionThread(int port, Main main)
 	{
 		super("Connection-" + port);
-		this.controller = controller;
+		this.main = main;
 	}
 
 	public void close()
@@ -29,15 +29,15 @@ public class ConnectionThread extends Thread
 	{
 		while (this.running)
 		{
-			final Controller controller = this.controller;
+			final Main main = this.main;
 
-			synchronized (controller.peers)
+			synchronized (main.peers)
 			{
-				synchronized (controller.entries)
+				synchronized (main.entries)
 				{
-					for (SyncEntry entry : controller.entries)
+					for (SyncEntry entry : main.entries)
 					{
-						final Peer peer = this.connectTo(controller.peers, entry.getAddress());
+						final Peer peer = this.connectTo(main.peers, entry.getAddress());
 						if (peer != null)
 						{
 							peer.addSyncEntry(entry);
@@ -45,7 +45,7 @@ public class ConnectionThread extends Thread
 					}
 				}
 
-				for (Iterator<Peer> iterator = controller.peers.values().iterator(); iterator.hasNext(); )
+				for (Iterator<Peer> iterator = main.peers.values().iterator(); iterator.hasNext(); )
 				{
 					final Peer peer = iterator.next();
 					if (!peer.isConnected())

@@ -1,6 +1,6 @@
 package com.clashsoft.p2psync.net;
 
-import com.clashsoft.p2psync.Controller;
+import com.clashsoft.p2psync.Main;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -17,7 +17,7 @@ public class ServerThread extends Thread
 
 	private volatile boolean running = true;
 
-	public ServerThread(int port, Controller controller)
+	public ServerThread(int port)
 	{
 		super("Server-" + port);
 		this.port = port;
@@ -36,7 +36,7 @@ public class ServerThread extends Thread
 		{
 			server.setSoTimeout(Constants.TIMEOUT);
 
-			this.port = Controller.PORT = server.getLocalPort();
+			this.port = Main.PORT = server.getLocalPort();
 
 			System.out.println("Server listening on port " + server.getLocalPort());
 

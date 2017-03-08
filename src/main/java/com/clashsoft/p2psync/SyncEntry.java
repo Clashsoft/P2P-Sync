@@ -29,6 +29,11 @@ public class SyncEntry
 		return this.address;
 	}
 
+	public void setAddress(Address address)
+	{
+		this.address = address;
+	}
+
 	public String getLocalFile()
 	{
 		return this.localFile;
@@ -61,5 +66,10 @@ public class SyncEntry
 		this.address = Address.read(input);
 		this.localFile = input.readUTF();
 		this.remoteFile = input.readUTF();
+	}
+
+	public SyncEntry copy()
+	{
+		return new SyncEntry(this.address, this.localFile, this.remoteFile);
 	}
 }

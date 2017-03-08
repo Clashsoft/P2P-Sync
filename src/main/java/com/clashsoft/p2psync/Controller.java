@@ -1,178 +1,104 @@
 package com.clashsoft.p2psync;
 
-import com.clashsoft.p2psync.net.*;
-import javafx.beans.binding.Bindings;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
+import com.clashsoft.p2psync.net.Address;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.stage.FileChooser;
-
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Controller
 {
-	public static int PORT;
-
-	public static String SAVE_FOLDER = Constants.getSaveFolder();
 
 	@FXML
 	public TableView<SyncEntry> syncTable;
 
 	@FXML
-	public Button newEntryButton;
+	public Button editEntryButton;
+	@FXML
+	public Button duplicateEntryButton;
+	@FXML
+	public Button deleteEntryButton;
 
-	@FXML
-	public TextField remoteHostname;
-	@FXML
-	public TextField remotePort;
-	@FXML
-	public TextField localFile;
-	@FXML
-	public TextField remoteFile;
-
-	@FXML
-	public Label errorLabel;
-
-	public final ObservableList<SyncEntry> entries = FXCollections.observableArrayList();
-	public final Map<Address, Peer>        peers   = new HashMap<>();
-
-	private ServerThread     serverThread;
-	private ConnectionThread connectionThread;
+	private EntryController entryController;
+	private Main            main;
 
 	@SuppressWarnings("unchecked")
-	@FXML
-	public void initialize()
+	public void initMain(Main main, EntryController entryController)
 	{
-		this.syncTable.setItems(this.entries);
+		this.main = main;
+		this.entryController = entryController;
+
+		this.syncTable.setItems(main.entries);
 
 		final ObservableList<TableColumn<SyncEntry, ?>> columns = this.syncTable.getColumns();
 		columns.get(0).setCellValueFactory(new PropertyValueFactory("address"));
 		columns.get(1).setCellValueFactory(new PropertyValueFactory("localFile"));
 		columns.get(2).setCellValueFactory(new PropertyValueFactory("remoteFile"));
 
-		this.remotePort.setText(Integer.toString(PORT));
-
-		this.newEntryButton.disableProperty().bind(Bindings.or(Bindings.or(this.remoteHostname.textProperty().isEmpty(),
-		                                                                   this.remotePort.textProperty().isEmpty()),
-		                                                       Bindings.or(this.localFile.textProperty().isEmpty(),
-		                                                                   this.remoteFile.textProperty().isEmpty())));
-
-		this.loadEntries();
-		this.entries.addListener((ListChangeListener<SyncEntry>) c -> this.saveEntries());
-
-		this.serverThread = new ServerThread(PORT, this);
-		this.serverThread.start();
-		this.connectionThread = new ConnectionThread(PORT, this);
-		this.connectionThread.start();
+		final BooleanBinding unselected = this.syncTable.getSelectionModel().selectedItemProperty().isNull();
+		this.editEntryButton.disableProperty().bind(unselected);
+		this.duplicateEntryButton.disableProperty().bind(unselected);
+		this.deleteEntryButton.disableProperty().bind(unselected);
 	}
 
-	public void close()
+	private SyncEntry getSelectedEntry()
 	{
-		this.peers.forEach((a, p) -> p.closeSocket());
-		this.serverThread.close();
-		this.connectionThread.close();
-	}
-
-	private void loadEntries()
-	{
-		if (SAVE_FOLDER == null)
-		{
-			return;
-		}
-
-		final File file = new File(SAVE_FOLDER, "data.bin");
-		if (!file.exists())
-		{
-			return;
-		}
-
-		System.out.println("Loading from " + file);
-
-		try (DataInputStream input = new DataInputStream(new FileInputStream(file)))
-		{
-			@SuppressWarnings("unused") final int version = input.read();
-			final int entries = input.readInt();
-
-			synchronized (this.entries)
-			{
-				for (int i = 0; i < entries; i++)
-				{
-					SyncEntry entry = new SyncEntry();
-					entry.read(input);
-					this.entries.add(entry);
-				}
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
-	private void saveEntries()
-	{
-		if (SAVE_FOLDER == null)
-		{
-			return;
-		}
-
-		final File file = new File(SAVE_FOLDER, "data.bin");
-		//noinspection ResultOfMethodCallIgnored
-		file.getParentFile().mkdirs();
-
-		System.out.println("Saving to " + file);
-
-		try (DataOutputStream output = new DataOutputStream(new FileOutputStream(file)))
-		{
-			synchronized (this.entries)
-			{
-				output.write(1); // version
-				output.writeInt(this.entries.size());
-				for (SyncEntry entry : this.entries)
-				{
-					entry.write(output);
-				}
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+		return this.syncTable.getSelectionModel().getSelectedItem();
 	}
 
 	@FXML
 	public void handleNewEntry()
 	{
-		try
+		synchronized (this.main.entries)
 		{
-			final int port = Integer.parseInt(this.remotePort.getText());
-			final Address address = new Address(this.remoteHostname.getText(), port);
-
-			this.entries.add(new SyncEntry(address, this.localFile.getText(), this.remoteFile.getText()));
-
-			this.localFile.clear();
-			this.remoteFile.clear();
-			this.errorLabel.setText("");
-		}
-		catch (NumberFormatException ex)
-		{
-			this.errorLabel.setText("Invalid Port: " + this.remotePort.getText());
+			final SyncEntry entry = new SyncEntry(new Address("", Main.PORT), "", "");
+			if (this.entryController.open(entry))
+			{
+				this.main.entries.add(entry);
+			}
 		}
 	}
 
 	@FXML
-	public void handleOpenLocalFile()
+	public void handleEditEntry()
 	{
-		FileChooser fileChooser = new FileChooser();
-		File file = fileChooser.showOpenDialog(null);
-		this.localFile.setText(file.getAbsolutePath());
+		synchronized (this.main.entries)
+		{
+			final int index = this.syncTable.getSelectionModel().getSelectedIndex();
+			final SyncEntry selectedEntry = this.main.entries.get(index);
+			if (this.entryController.open(selectedEntry))
+			{
+				// trigger an update to the ObservableList
+				this.main.entries.set(index, selectedEntry);
+			}
+		}
+	}
+
+	@FXML
+	public void handleDuplicateEntry()
+	{
+		synchronized (this.main.entries)
+		{
+			final SyncEntry copy = this.getSelectedEntry().copy();
+			if (this.entryController.open(copy))
+			{
+				this.main.entries.add(copy);
+			}
+		}
+	}
+
+	@FXML
+	public void handleDeleteEntry()
+	{
+		synchronized (this.main.entries)
+		{
+			this.main.entries.remove(this.getSelectedEntry());
+		}
 	}
 
 	@FXML
@@ -181,11 +107,7 @@ public class Controller
 		// DELETE or Meta-Backspace or Ctrl-Backspace
 		if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE)
 		{
-			synchronized (this.entries)
-			{
-				final SyncEntry entry = this.syncTable.getSelectionModel().getSelectedItem();
-				this.entries.remove(entry);
-			}
+			this.handleDeleteEntry();
 		}
 	}
 }
