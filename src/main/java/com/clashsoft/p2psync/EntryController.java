@@ -58,6 +58,12 @@ public class EntryController
 		this.entry = entry;
 		this.submitted = false;
 
+		final boolean readOnly = entry.getType() != SyncEntry.Type.OUTBOUND;
+		this.remoteHostname.setDisable(readOnly);
+		this.remotePort.setDisable(readOnly);
+		this.localFile.setDisable(readOnly);
+		this.remoteFile.setDisable(readOnly);
+
 		final Address address = entry.getAddress();
 
 		this.remoteHostname.setText(address.hostname);

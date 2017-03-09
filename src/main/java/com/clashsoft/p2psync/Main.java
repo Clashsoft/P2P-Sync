@@ -2,6 +2,7 @@ package com.clashsoft.p2psync;
 
 import com.clashsoft.p2psync.net.*;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -25,7 +26,7 @@ public class Main extends Application
 
 	private ConnectionThread connectionThread;
 
-	public final ObservableList<SyncEntry> entries = FXCollections.observableArrayList();
+	public final ObservableList<SyncEntry> entries = FXCollections.observableArrayList(SyncEntry::properties);
 	public final Map<Address, Peer>        peers   = new HashMap<>();
 
 	public static void main(String[] args)
@@ -80,7 +81,7 @@ public class Main extends Application
 			this.loadEntries();
 			this.entries.addListener((ListChangeListener<SyncEntry>) c -> this.saveEntries());
 
-			this.serverThread = new ServerThread(Main.PORT);
+			this.serverThread = new ServerThread(Main.PORT, this);
 			this.serverThread.start();
 			this.connectionThread = new ConnectionThread(Main.PORT, this);
 			this.connectionThread.start();
@@ -123,7 +124,7 @@ public class Main extends Application
 
 		try (DataInputStream input = new DataInputStream(new FileInputStream(file)))
 		{
-			@SuppressWarnings("unused") final int version = input.read();
+			final int version = input.read();
 			final int entries = input.readInt();
 
 			synchronized (this.entries)
@@ -131,7 +132,7 @@ public class Main extends Application
 				for (int i = 0; i < entries; i++)
 				{
 					SyncEntry entry = new SyncEntry();
-					entry.read(input);
+					entry.read(input, version);
 					this.entries.add(entry);
 				}
 			}
@@ -150,26 +151,49 @@ public class Main extends Application
 		}
 
 		final File file = new File(Main.SAVE_FOLDER, "data.bin");
-		//noinspection ResultOfMethodCallIgnored
-		file.getParentFile().mkdirs();
 
 		System.out.println("Saving to " + file);
 
-		try (DataOutputStream output = new DataOutputStream(new FileOutputStream(file)))
+		try
 		{
-			synchronized (this.entries)
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+
+			try (DataOutputStream output = new DataOutputStream(new FileOutputStream(file)))
 			{
-				output.write(1); // version
-				output.writeInt(this.entries.size());
-				for (SyncEntry entry : this.entries)
+				synchronized (this.entries)
 				{
-					entry.write(output);
+					output.write(2); // version
+					output.writeInt(this.entries.size());
+					for (SyncEntry entry : this.entries)
+					{
+						entry.write(output);
+					}
 				}
 			}
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			System.err.println("Failed to save data: " + e.getMessage());
+		}
+	}
+
+	public SyncEntry getInboundEntry(Address address, String localPath, String remotePath)
+	{
+		synchronized (this.entries)
+		{
+			for (SyncEntry entry : this.entries)
+			{
+				if (entry.getAddress().hostname.equals(address.hostname) //
+					    && entry.getRemoteFile().equals(remotePath) && entry.getLocalFile().equals(localPath))
+				{
+					return entry;
+				}
+			}
+
+			SyncEntry entry = new SyncEntry(new Address(address.hostname, 0), localPath, remotePath, SyncEntry.Type.INBOUND);
+			Platform.runLater(() -> this.entries.add(entry));
+			return entry;
 		}
 	}
 }

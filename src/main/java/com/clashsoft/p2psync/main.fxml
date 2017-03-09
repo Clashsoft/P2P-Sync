@@ -9,8 +9,9 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<GridPane hgap="10.0" vgap="10.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.clashsoft.p2psync.Controller">
+<GridPane hgap="10.0" vgap="10.0" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.clashsoft.p2psync.Controller">
 	<columnConstraints>
 		<ColumnConstraints />
 		<ColumnConstraints hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" minWidth="10.0" />
@@ -21,19 +22,25 @@
 		<RowConstraints vgrow="SOMETIMES" />
       <RowConstraints />
       <RowConstraints />
+      <RowConstraints />
 	</rowConstraints>
 	<children>
 		<TableView fx:id="syncTable" editable="true" onKeyReleased="#handleTableKeyTyped" tableMenuButtonVisible="true" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.rowSpan="4">
 			<columns>
-				<TableColumn maxWidth="-Infinity" minWidth="140.0" prefWidth="140.0" text="Remote Address" />
-				<TableColumn maxWidth="1.7976931348623157E308" minWidth="200.0" prefWidth="-1.0" text="Local File" />
-				<TableColumn maxWidth="1.7976931348623157E308" minWidth="200.0" prefWidth="-1.0" text="Remote File" />
-				<TableColumn editable="false" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" text="Status" />
+            <TableColumn fx:id="enableColumn" maxWidth="32.0" minWidth="32.0" prefWidth="-1.0" resizable="false" text="✓" />
+            <TableColumn fx:id="typeColumn" maxWidth="-1.0" minWidth="75.0" prefWidth="-1.0" text="Type" />
+				<TableColumn fx:id="remoteAddressColumn" maxWidth="1.7976931348623157E308" minWidth="120.0" prefWidth="-1.0" text="Remote Address" />
+				<TableColumn fx:id="localFileColumn" maxWidth="1.7976931348623157E308" minWidth="200.0" prefWidth="-1.0" text="Local File" />
+				<TableColumn fx:id="remoteFileColumn" maxWidth="1.7976931348623157E308" minWidth="200.0" prefWidth="-1.0" text="Remote File" />
+				<TableColumn fx:id="statusColumn" editable="false" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" text="Status" />
 			</columns>
 		</TableView>
-      <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+      <VBox spacing="10.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
          <children>
-            <Label alignment="CENTER" maxHeight="30.0" maxWidth="1.7976931348623157E308" text="Entry Tools" underline="true" />
+            <Label alignment="CENTER" maxHeight="30.0" maxWidth="1.7976931348623157E308" text="Entry Tools" textAlignment="CENTER">
+               <font>
+                  <Font size="14.0" />
+               </font></Label>
       		<Button maxWidth="1.7976931348623157E308" onAction="#handleNewEntry" text="_New..." />
             <Button fx:id="editEntryButton" maxWidth="1.7976931348623157E308" onAction="#handleEditEntry" text="_Edit..." />
             <Button fx:id="duplicateEntryButton" maxWidth="1.7976931348623157E308" onAction="#handleDuplicateEntry" text="_Duplicate..." />

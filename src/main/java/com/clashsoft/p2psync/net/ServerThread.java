@@ -12,15 +12,18 @@ import java.util.List;
 
 public class ServerThread extends Thread
 {
-	private int port;
+	private       int  port;
+	private final Main main;
+
 	private final List<Peer> peers = new ArrayList<>();
 
 	private volatile boolean running = true;
 
-	public ServerThread(int port)
+	public ServerThread(int port, Main main)
 	{
 		super("Server-" + port);
 		this.port = port;
+		this.main = main;
 	}
 
 	public void close()
@@ -73,7 +76,7 @@ public class ServerThread extends Thread
 
 			final Socket connection = server.accept();
 			System.out.println("Connected to " + connection);
-			this.peers.add(new Peer(connection));
+			this.peers.add(new Peer(connection, this.main));
 		}
 		catch (SocketTimeoutException ignored)
 		{

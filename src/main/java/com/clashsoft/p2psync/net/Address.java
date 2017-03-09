@@ -44,7 +44,7 @@ public class Address
 	@Override
 	public String toString()
 	{
-		return this.hostname + ":" + this.port;
+		return this.port == 0 ? this.hostname : (this.hostname + ":" + this.port);
 	}
 
 	public static Address fromSocket(Socket socket)

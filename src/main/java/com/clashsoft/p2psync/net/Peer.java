@@ -1,5 +1,6 @@
 package com.clashsoft.p2psync.net;
 
+import com.clashsoft.p2psync.Main;
 import com.clashsoft.p2psync.SyncEntry;
 
 import java.io.*;
@@ -17,16 +18,19 @@ public class Peer
 	public final Set<SyncEntry> syncEntries = new HashSet<>();
 
 	private Socket socket;
+	private final Main main;
 
-	public Peer(Socket socket) throws IOException
+	public Peer(Socket socket, Main main) throws IOException
 	{
 		this.socket = socket;
+		this.main = main;
 		this.address = Address.fromSocket(this.socket);
 	}
 
-	public Peer(Address address) throws IOException
+	public Peer(Address address, Main main) throws IOException
 	{
 		this.socket = newSocket(address);
+		this.main = main;
 		this.address = Address.fromSocket(this.socket);
 	}
 
@@ -77,28 +81,33 @@ public class Peer
 		return !this.socket.isClosed() && this.socket.isConnected() && this.socket.isBound();
 	}
 
-	public void synchronize()
+	public void sendOffer() throws IOException
 	{
-		try
+		if (this.syncEntries.isEmpty() || this.syncEntries.stream().noneMatch(SyncEntry::isEnabled))
 		{
-			this.sendOffer();
+			return;
 		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
 
-	private void sendOffer() throws IOException
-	{
 		DataOutputStream dos = new DataOutputStream(this.getSocket().getOutputStream());
 		dos.write(Constants.OFFER);
 
-		System.out.println("Sending OFFER...");
-
 		for (SyncEntry entry : this.syncEntries)
 		{
-			this.writeFileOffer(dos, new File(entry.getLocalFile()), new File(entry.getRemoteFile()));
+			if (!entry.isEnabled())
+			{
+				continue;
+			}
+
+			final String localFile = entry.getLocalFile();
+			final String remoteFile = entry.getRemoteFile();
+			System.out.println("Sending OFFER to copy from " + localFile + " to " + remoteFile);
+
+			dos.writeUTF(localFile);
+			dos.writeUTF(remoteFile);
+			dos.writeLong(Long.MAX_VALUE);
+
+
+			this.writeFileOffer(dos, new File(localFile), new File(remoteFile));
 
 			// from
 			// to
@@ -187,6 +196,8 @@ public class Peer
 
 	private void handleOffer(DataInputStream input) throws IOException
 	{
+		SyncEntry currentEntry = null;
+
 		while (true)
 		{
 			final String remotePath = input.readUTF();
@@ -199,6 +210,18 @@ public class Peer
 			final long remoteTimeStamp = input.readLong();
 
 			System.out.print("Received OFFER to copy from " + remotePath + " to " + localPath + ", ");
+
+			if (remoteTimeStamp == Long.MAX_VALUE)
+			{
+				currentEntry = this.main.getInboundEntry(this.address, localPath, remotePath);
+				continue;
+			}
+
+			if (currentEntry == null || !currentEntry.isEnabled())
+			{
+				System.out.println("declined (inbound configuration disabled)");
+				continue;
+			}
 
 			final File localFile = new File(localPath);
 			if (remoteTimeStamp > localFile.lastModified())

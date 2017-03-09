@@ -2,12 +2,11 @@ package com.clashsoft.p2psync;
 
 import com.clashsoft.p2psync.net.Address;
 import javafx.beans.binding.BooleanBinding;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 
@@ -24,10 +23,20 @@ public class Controller
 	@FXML
 	public Button deleteEntryButton;
 
+	@FXML
+	public TableColumn<SyncEntry, Boolean> enableColumn;
+	@FXML
+	public TableColumn<SyncEntry, SyncEntry.Type> typeColumn;
+	@FXML
+	public TableColumn<SyncEntry, Address> remoteAddressColumn;
+	@FXML
+	public TableColumn<SyncEntry, String> localFileColumn;
+	@FXML
+	public TableColumn<SyncEntry, String> remoteFileColumn;
+
 	private EntryController entryController;
 	private Main            main;
 
-	@SuppressWarnings("unchecked")
 	public void initMain(Main main, EntryController entryController)
 	{
 		this.main = main;
@@ -35,10 +44,13 @@ public class Controller
 
 		this.syncTable.setItems(main.entries);
 
-		final ObservableList<TableColumn<SyncEntry, ?>> columns = this.syncTable.getColumns();
-		columns.get(0).setCellValueFactory(new PropertyValueFactory("address"));
-		columns.get(1).setCellValueFactory(new PropertyValueFactory("localFile"));
-		columns.get(2).setCellValueFactory(new PropertyValueFactory("remoteFile"));
+		this.enableColumn.setCellValueFactory(c -> c.getValue().enabledProperty());
+		this.enableColumn.setCellFactory(CheckBoxTableCell.forTableColumn(this.enableColumn));
+
+		this.typeColumn.setCellValueFactory(c -> c.getValue().typeProperty());
+		this.remoteAddressColumn.setCellValueFactory(c -> c.getValue().addressProperty());
+		this.localFileColumn.setCellValueFactory(c -> c.getValue().localFileProperty());
+		this.remoteFileColumn.setCellValueFactory(c -> c.getValue().remoteFileProperty());
 
 		final BooleanBinding unselected = this.syncTable.getSelectionModel().selectedItemProperty().isNull();
 		this.editEntryButton.disableProperty().bind(unselected);
@@ -56,7 +68,7 @@ public class Controller
 	{
 		synchronized (this.main.entries)
 		{
-			final SyncEntry entry = new SyncEntry(new Address("", Main.PORT), "", "");
+			final SyncEntry entry = new SyncEntry(new Address("", Main.PORT), "", "", SyncEntry.Type.OUTBOUND);
 			if (this.entryController.open(entry))
 			{
 				this.main.entries.add(entry);

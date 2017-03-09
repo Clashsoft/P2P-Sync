@@ -37,6 +37,11 @@ public class ConnectionThread extends Thread
 				{
 					for (SyncEntry entry : main.entries)
 					{
+						if (entry.getType() != SyncEntry.Type.OUTBOUND)
+						{
+							continue;
+						}
+
 						final Peer peer = this.connectTo(main.peers, entry.getAddress());
 						if (peer != null)
 						{
@@ -55,14 +60,14 @@ public class ConnectionThread extends Thread
 						continue;
 					}
 
-					peer.synchronize();
 					try
 					{
+						peer.sendOffer();
 						peer.handlePacket();
 					}
 					catch (IOException e)
 					{
-						e.printStackTrace();
+						peer.closeSocket();
 					}
 				}
 			}
@@ -87,14 +92,13 @@ public class ConnectionThread extends Thread
 
 		try
 		{
-			peer = new Peer(address);
+			peer = new Peer(address, this.main);
 			peers.put(address, peer);
 			peers.put(peer.address, peer);
 		}
 		catch (IOException e)
 		{
-			System.err.println("Cannot connect to " + address);
-			e.printStackTrace();
+			System.err.println("Cannot connect to " + address + ": " + e.getMessage());
 		}
 
 		return peer;
