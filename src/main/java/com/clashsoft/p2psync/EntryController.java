@@ -29,6 +29,8 @@ public class EntryController
 
 	@FXML
 	public Button submitButton;
+	@FXML
+	public Button openLocalFileButton;
 
 	private SyncEntry entry;
 	private boolean submitted;
@@ -63,6 +65,7 @@ public class EntryController
 		this.remotePort.setDisable(readOnly);
 		this.localFile.setDisable(readOnly);
 		this.remoteFile.setDisable(readOnly);
+		this.openLocalFileButton.setDisable(readOnly);
 
 		final Address address = entry.getAddress();
 
