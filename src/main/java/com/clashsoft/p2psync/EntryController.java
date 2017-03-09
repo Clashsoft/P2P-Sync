@@ -33,7 +33,7 @@ public class EntryController
 	public Button openLocalFileButton;
 
 	private SyncEntry entry;
-	private boolean submitted;
+	private boolean   submitted;
 
 	public void initialize()
 	{
@@ -41,8 +41,7 @@ public class EntryController
 
 		this.submitButton.disableProperty().bind(Bindings.or(Bindings.or(this.remoteHostname.textProperty().isEmpty(),
 		                                                                 this.remotePort.textProperty().isEmpty()),
-		                                                     Bindings.or(this.localFile.textProperty().isEmpty(),
-		                                                                 this.remoteFile.textProperty().isEmpty())));
+		                                                     this.localFile.textProperty().isEmpty()));
 	}
 
 	public void init(Window window, Parent root)
@@ -60,12 +59,9 @@ public class EntryController
 		this.entry = entry;
 		this.submitted = false;
 
-		final boolean readOnly = entry.getType() != SyncEntry.Type.OUTBOUND;
-		this.remoteHostname.setDisable(readOnly);
-		this.remotePort.setDisable(readOnly);
-		this.localFile.setDisable(readOnly);
-		this.remoteFile.setDisable(readOnly);
-		this.openLocalFileButton.setDisable(readOnly);
+		final boolean outbound = entry.getType() == SyncEntry.Type.OUTBOUND;
+		this.remoteHostname.setEditable(outbound);
+		this.remotePort.setEditable(outbound);
 
 		final Address address = entry.getAddress();
 
@@ -86,7 +82,6 @@ public class EntryController
 			this.entry
 				.setAddress(new Address(this.remoteHostname.getText(), Integer.parseInt(this.remotePort.getText())));
 			this.entry.setLocalFile(this.localFile.getText());
-			this.entry.setRemoteFile(this.remoteFile.getText());
 			this.submitted = true;
 
 			this.dialog.close();

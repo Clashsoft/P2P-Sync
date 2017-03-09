@@ -24,15 +24,15 @@ public class Controller
 	public Button deleteEntryButton;
 
 	@FXML
-	public TableColumn<SyncEntry, Boolean> enableColumn;
+	public TableColumn<SyncEntry, Boolean>        enableColumn;
 	@FXML
 	public TableColumn<SyncEntry, SyncEntry.Type> typeColumn;
 	@FXML
-	public TableColumn<SyncEntry, Address> remoteAddressColumn;
+	public TableColumn<SyncEntry, Address>        remoteAddressColumn;
 	@FXML
-	public TableColumn<SyncEntry, String> localFileColumn;
+	public TableColumn<SyncEntry, String>         localFileColumn;
 	@FXML
-	public TableColumn<SyncEntry, String> remoteFileColumn;
+	public TableColumn<SyncEntry, String>         remoteFileColumn;
 
 	private EntryController entryController;
 	private Main            main;
@@ -66,10 +66,10 @@ public class Controller
 	@FXML
 	public void handleNewEntry()
 	{
-		synchronized (this.main.entries)
+		final SyncEntry entry = new SyncEntry(new Address("", Main.PORT), "", "", SyncEntry.Type.OUTBOUND);
+		if (this.entryController.open(entry))
 		{
-			final SyncEntry entry = new SyncEntry(new Address("", Main.PORT), "", "", SyncEntry.Type.OUTBOUND);
-			if (this.entryController.open(entry))
+			synchronized (this.main.entries)
 			{
 				this.main.entries.add(entry);
 			}
@@ -79,25 +79,16 @@ public class Controller
 	@FXML
 	public void handleEditEntry()
 	{
-		synchronized (this.main.entries)
-		{
-			final int index = this.syncTable.getSelectionModel().getSelectedIndex();
-			final SyncEntry selectedEntry = this.main.entries.get(index);
-			if (this.entryController.open(selectedEntry))
-			{
-				// trigger an update to the ObservableList
-				this.main.entries.set(index, selectedEntry);
-			}
-		}
+		this.entryController.open(this.getSelectedEntry());
 	}
 
 	@FXML
 	public void handleDuplicateEntry()
 	{
-		synchronized (this.main.entries)
+		final SyncEntry copy = this.getSelectedEntry().copy();
+		if (this.entryController.open(copy))
 		{
-			final SyncEntry copy = this.getSelectedEntry().copy();
-			if (this.entryController.open(copy))
+			synchronized (this.main.entries)
 			{
 				this.main.entries.add(copy);
 			}

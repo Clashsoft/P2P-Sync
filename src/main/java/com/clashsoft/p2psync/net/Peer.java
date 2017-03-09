@@ -4,6 +4,7 @@ import com.clashsoft.p2psync.Main;
 import com.clashsoft.p2psync.SyncEntry;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Files;
@@ -13,6 +14,11 @@ import java.util.Set;
 
 public class Peer
 {
+	private static final int OFFER_END = 0;
+	private static final int OFFER_ENTRY = 1;
+	private static final int OFFER_DIRECTORY = 2;
+	private static final int OFFER_FILE = 3;
+
 	public final Address address;
 
 	public final Set<SyncEntry> syncEntries = new HashSet<>();
@@ -27,11 +33,10 @@ public class Peer
 		this.address = Address.fromSocket(this.socket);
 	}
 
-	public Peer(Address address, Main main) throws IOException
+	public Peer(Address address, Main main)
 	{
-		this.socket = newSocket(address);
 		this.main = main;
-		this.address = Address.fromSocket(this.socket);
+		this.address = address;
 	}
 
 	public void addSyncEntry(SyncEntry entry)
@@ -41,7 +46,16 @@ public class Peer
 
 	private static Socket newSocket(Address address) throws IOException
 	{
-		final Socket socket = new Socket(address.hostname, address.port);
+		final Socket socket = new Socket();
+
+		try
+		{
+			socket.connect(new InetSocketAddress(address.hostname, address.port), Constants.TIMEOUT);
+		}
+		catch (IOException ex)
+		{
+			System.err.println("Cannot connect to " + address + ": " + ex.getMessage());
+		}
 
 		socket.setKeepAlive(true);
 		socket.setSoTimeout(Constants.TIMEOUT);
@@ -50,6 +64,10 @@ public class Peer
 
 	private Socket getSocket() throws IOException
 	{
+		if (this.socket == null)
+		{
+			return this.socket = newSocket(this.address);
+		}
 		if (!this.socket.isConnected())
 		{
 			this.closeSocket();
@@ -66,7 +84,7 @@ public class Peer
 	{
 		try
 		{
-			if (!this.socket.isClosed())
+			if (this.socket != null && !this.socket.isClosed())
 			{
 				this.socket.close();
 			}
@@ -78,7 +96,7 @@ public class Peer
 
 	public boolean isConnected()
 	{
-		return !this.socket.isClosed() && this.socket.isConnected() && this.socket.isBound();
+		return this.socket != null && !this.socket.isClosed() && this.socket.isConnected() && this.socket.isBound();
 	}
 
 	public void sendOffer() throws IOException
@@ -88,7 +106,8 @@ public class Peer
 			return;
 		}
 
-		DataOutputStream dos = new DataOutputStream(this.getSocket().getOutputStream());
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final DataOutputStream dos = new DataOutputStream(bos);
 		dos.write(Constants.OFFER);
 
 		for (SyncEntry entry : this.syncEntries)
@@ -99,40 +118,40 @@ public class Peer
 			}
 
 			final String localFile = entry.getLocalFile();
-			final String remoteFile = entry.getRemoteFile();
-			System.out.println("Sending OFFER to copy from " + localFile + " to " + remoteFile);
+			System.out.println("Sending OFFER to copy from " + localFile);
 
+			dos.write(OFFER_ENTRY);
 			dos.writeUTF(localFile);
-			dos.writeUTF(remoteFile);
-			dos.writeLong(Long.MAX_VALUE);
 
-
-			this.writeFileOffer(dos, new File(localFile), new File(remoteFile));
-
-			// from
-			// to
-			// from changed
+			this.writeFileOffer(dos, new File(localFile));
 		}
 
-		dos.writeUTF("");
+		dos.write(OFFER_END);
 		dos.flush();
+
+		bos.writeTo(this.getSocket().getOutputStream());
 	}
 
-	private void writeFileOffer(DataOutputStream dos, File localPath, File remotePath) throws IOException
+	private void writeFileOffer(DataOutputStream dos, File localPath) throws IOException
 	{
 		if (!localPath.isDirectory())
 		{
-			dos.writeUTF(localPath.getAbsolutePath());
-			dos.writeUTF(remotePath.getAbsolutePath());
+			dos.write(OFFER_FILE);
+			dos.writeUTF(localPath.getAbsolutePath().replace(File.separatorChar, '/'));
 			dos.writeLong(localPath.lastModified());
 			return;
 		}
 
+		dos.write(OFFER_DIRECTORY);
+		dos.writeUTF(localPath.getName());
+
 		//noinspection ConstantConditions
 		for (String subFile : localPath.list())
 		{
-			this.writeFileOffer(dos, new File(localPath, subFile), new File(remotePath, subFile));
+			this.writeFileOffer(dos, new File(localPath, subFile));
 		}
+
+		dos.write(OFFER_END);
 	}
 
 	private void sendRequest(String localPath, String remotePath) throws IOException
@@ -148,7 +167,7 @@ public class Peer
 
 	private void sendFile(File localPath, String remotePath) throws IOException
 	{
-		DataOutputStream dos = new DataOutputStream(this.getSocket().getOutputStream());
+		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(this.getSocket().getOutputStream()));
 		System.out.println("Sending RESPONSE payload from " + localPath + " to " + remotePath);
 
 		dos.write(Constants.RESPONSE);
@@ -164,10 +183,15 @@ public class Peer
 
 	public void handlePacket() throws IOException
 	{
+		if (!this.isConnected())
+		{
+			return;
+		}
+
 		final InputStream inputStream = this.socket.getInputStream();
 		if (inputStream.available() >= 0)
 		{
-			this.handlePacket(new DataInputStream(inputStream));
+			this.handlePacket(new DataInputStream(new BufferedInputStream(inputStream)));
 		}
 	}
 
@@ -196,43 +220,75 @@ public class Peer
 
 	private void handleOffer(DataInputStream input) throws IOException
 	{
-		SyncEntry currentEntry = null;
-
 		while (true)
 		{
-			final String remotePath = input.readUTF();
-			if (remotePath.isEmpty())
+			switch (input.read())
 			{
+			case OFFER_END:
 				return;
-			}
+			case OFFER_ENTRY:
+				final String remotePath = input.readUTF();
+				final SyncEntry currentEntry = this.main.getInboundEntry(this.address, remotePath);
+				final String localDir = currentEntry.getLocalFile();
 
-			final String localPath = input.readUTF();
-			final long remoteTimeStamp = input.readLong();
-
-			System.out.print("Received OFFER to copy from " + remotePath + " to " + localPath + ", ");
-
-			if (remoteTimeStamp == Long.MAX_VALUE)
-			{
-				currentEntry = this.main.getInboundEntry(this.address, localPath, remotePath);
-				continue;
+				switch (input.read())
+				{
+				case OFFER_FILE:
+					this.readFileOffer(input, currentEntry, localDir);
+					break;
+				case OFFER_DIRECTORY:
+					input.readUTF(); // the dir name, already the last component of localDir
+					//noinspection StatementWithEmptyBody
+					while (this.readOffer(input, currentEntry, localDir));
+				}
 			}
+		}
+	}
 
-			if (currentEntry == null || !currentEntry.isEnabled())
-			{
-				System.out.println("declined (inbound configuration disabled)");
-				continue;
-			}
+	private boolean readOffer(DataInputStream input, SyncEntry currentEntry, String localDir) throws IOException
+	{
+		switch (input.read())
+		{
+		case OFFER_END:
+			return false;
+		case OFFER_FILE:
+		{
+			this.readFileOffer(input, currentEntry, localDir);
+			return true;
+		}
+		case OFFER_DIRECTORY:
+			final String remoteName = input.readUTF();
+			final String newDir = localDir + File.separator + remoteName;
 
-			final File localFile = new File(localPath);
-			if (remoteTimeStamp > localFile.lastModified())
-			{
-				System.out.println("accepted");
-				this.sendRequest(remotePath, localPath);
-			}
-			else
-			{
-				System.out.println("declined (file up-to-date)");
-			}
+			//noinspection StatementWithEmptyBody
+			while (this.readOffer(input, currentEntry, newDir));
+		}
+		return true;
+	}
+
+	private void readFileOffer(DataInputStream input, SyncEntry currentEntry, String localDir) throws IOException
+	{
+		final String remotePath = input.readUTF();
+		final long lastChanged = input.readLong();
+		final String remoteName = remotePath.substring(remotePath.lastIndexOf('/') + 1);
+		final String localPath = localDir + File.separator + remoteName;
+
+		System.out.print("Received OFFER to copy from " + remotePath + " to " + localPath + ", ");
+
+		if (!currentEntry.isEnabled() || currentEntry.getLocalFile().isEmpty())
+		{
+			System.out.println("declined (inbound configuration disabled)");
+			return;
+		}
+
+		if (lastChanged > new File(localPath).lastModified())
+		{
+			System.out.println("accepted");
+			this.sendRequest(remotePath, localPath);
+		}
+		else
+		{
+			System.out.println("declined (file up-to-date)");
 		}
 	}
 
@@ -253,7 +309,7 @@ public class Peer
 
 		System.out.println("Received RESPONSE of size " + size + "B, copying to " + localPath + "...");
 
-		new Thread(() -> this.saveFile(input, localPath, size)).start();
+		this.saveFile(input, localPath, size);
 
 		this.writeEOT();
 	}
@@ -285,7 +341,9 @@ public class Peer
 
 			// move the temp to the desired location
 
-			temp.renameTo(new File(localPath));
+			final File targetFile = new File(localPath);
+			Files.createDirectories(targetFile.getParentFile().toPath());
+			temp.renameTo(targetFile);
 		}
 		catch (IOException ex)
 		{

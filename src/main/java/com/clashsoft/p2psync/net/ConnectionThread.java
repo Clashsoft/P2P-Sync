@@ -5,7 +5,6 @@ import com.clashsoft.p2psync.SyncEntry;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 
 public class ConnectionThread extends Thread
 {
@@ -27,12 +26,15 @@ public class ConnectionThread extends Thread
 	@Override
 	public void run()
 	{
+		long currentTime = System.currentTimeMillis();
+
 		while (this.running)
 		{
 			final Main main = this.main;
 
 			synchronized (main.peers)
 			{
+				// Create Peer Map
 				synchronized (main.entries)
 				{
 					for (SyncEntry entry : main.entries)
@@ -42,7 +44,7 @@ public class ConnectionThread extends Thread
 							continue;
 						}
 
-						final Peer peer = this.connectTo(main.peers, entry.getAddress());
+						final Peer peer = this.getPeer(entry.getAddress());
 						if (peer != null)
 						{
 							peer.addSyncEntry(entry);
@@ -50,15 +52,10 @@ public class ConnectionThread extends Thread
 					}
 				}
 
+				// Connect and communicate with peers
 				for (Iterator<Peer> iterator = main.peers.values().iterator(); iterator.hasNext(); )
 				{
 					final Peer peer = iterator.next();
-					if (!peer.isConnected())
-					{
-						peer.closeSocket();
-						iterator.remove();
-						continue;
-					}
 
 					try
 					{
@@ -68,39 +65,44 @@ public class ConnectionThread extends Thread
 					catch (IOException e)
 					{
 						peer.closeSocket();
+						iterator.remove();
 					}
 				}
 			}
 
-			try
-			{
-				Thread.sleep(5000);
-			}
-			catch (InterruptedException ignored)
-			{
-			}
+			final long newTime = System.currentTimeMillis();
+			final long elapsed = newTime - currentTime;
+			currentTime = newTime;
+			this.trySleep(Constants.TIMEOUT - elapsed);
 		}
 	}
 
-	private Peer connectTo(Map<Address, Peer> peers, Address address)
+	private void trySleep(long elapsed)
 	{
-		Peer peer = peers.get(address);
+		if (elapsed <= 0)
+		{
+			return;
+		}
+
+		try
+		{
+			Thread.sleep(elapsed);
+		}
+		catch (InterruptedException ignored)
+		{
+		}
+	}
+
+	private Peer getPeer(Address address)
+	{
+		Peer peer = this.main.peers.get(address);
 		if (peer != null)
 		{
 			return peer;
 		}
 
-		try
-		{
-			peer = new Peer(address, this.main);
-			peers.put(address, peer);
-			peers.put(peer.address, peer);
-		}
-		catch (IOException e)
-		{
-			System.err.println("Cannot connect to " + address + ": " + e.getMessage());
-		}
-
+		peer = new Peer(address, this.main);
+		this.main.peers.put(address, peer);
 		return peer;
 	}
 }

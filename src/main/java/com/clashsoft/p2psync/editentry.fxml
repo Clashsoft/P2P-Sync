@@ -27,7 +27,7 @@
    <children>
       <TextField fx:id="remoteHostname" prefHeight="27.0" prefWidth="198.0" promptText="Remote IP / Hostname" GridPane.columnIndex="2" GridPane.rowIndex="1" />
       <TextField fx:id="localFile" promptText="Local File" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="2" />
-      <TextField fx:id="remoteFile" prefHeight="27.0" prefWidth="291.0" promptText="Remote File" GridPane.columnIndex="2" GridPane.columnSpan="3" GridPane.rowIndex="3" />
+      <TextField fx:id="remoteFile" editable="false" prefHeight="27.0" prefWidth="291.0" promptText="Remote File" GridPane.columnIndex="2" GridPane.columnSpan="3" GridPane.rowIndex="3" />
       <Button fx:id="openLocalFileButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleOpenLocalFile" text="..." GridPane.columnIndex="4" GridPane.rowIndex="2" />
       <TextField fx:id="remotePort" promptText="Port" GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.rowIndex="1" />
       <HBox alignment="TOP_RIGHT" prefHeight="100.0" prefWidth="200.0" spacing="20.0" GridPane.columnIndex="2" GridPane.columnSpan="3" GridPane.rowIndex="4">

@@ -14,12 +14,13 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Main extends Application
 {
-	public static int PORT;
+	public static int    PORT        = 50350;
 	public static String SAVE_FOLDER = Constants.getSaveFolder();
 
 	private ServerThread serverThread;
@@ -156,8 +157,7 @@ public class Main extends Application
 
 		try
 		{
-			file.getParentFile().mkdirs();
-			file.createNewFile();
+			Files.createDirectories(file.getParentFile().toPath());
 
 			try (DataOutputStream output = new DataOutputStream(new FileOutputStream(file)))
 			{
@@ -178,20 +178,21 @@ public class Main extends Application
 		}
 	}
 
-	public SyncEntry getInboundEntry(Address address, String localPath, String remotePath)
+	public SyncEntry getInboundEntry(Address address, String remotePath)
 	{
 		synchronized (this.entries)
 		{
 			for (SyncEntry entry : this.entries)
 			{
 				if (entry.getAddress().hostname.equals(address.hostname) //
-					    && entry.getRemoteFile().equals(remotePath) && entry.getLocalFile().equals(localPath))
+					    && entry.getRemoteFile().equals(remotePath))
 				{
 					return entry;
 				}
 			}
 
-			SyncEntry entry = new SyncEntry(new Address(address.hostname, 0), localPath, remotePath, SyncEntry.Type.INBOUND);
+			SyncEntry entry = new SyncEntry(new Address(address.hostname, 0), "", remotePath,
+			                                SyncEntry.Type.INBOUND);
 			Platform.runLater(() -> this.entries.add(entry));
 			return entry;
 		}
