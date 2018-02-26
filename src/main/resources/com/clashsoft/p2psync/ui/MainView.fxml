@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?><?import javafx.scene.control.*?><?import javafx.scene.image.*?><?import javafx.scene.layout.HBox?><?import javafx.scene.layout.VBox?><?import javafx.scene.text.Font?>
+<VBox spacing="5.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.clashsoft.p2psync.ui.MainViewController">
+	<padding>
+		<Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+	</padding>
+	<HBox spacing="5.0">
+		<Label text="Connections" underline="true">
+			<font>
+				<Font size="18.0"/>
+			</font>
+		</Label>
+		<HBox maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS"/>
+		<TextField onAction="#onSearchAction" promptText="Search"/>
+		<Button contentDisplay="GRAPHIC_ONLY" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+		        minWidth="-Infinity" mnemonicParsing="false" onAction="#onFilterAction" prefHeight="27.0"
+		        prefWidth="27.0" text="Filter">
+			<graphic>
+				<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+					<Image url="@filter.png"/>
+				</ImageView>
+			</graphic>
+		</Button>
+		<Button contentDisplay="GRAPHIC_ONLY" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+		        minWidth="-Infinity" mnemonicParsing="false" onAction="#onAddAction" prefHeight="27.0" prefWidth="27.0"
+		        text="Add">
+			<graphic>
+				<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+					<Image url="@add.png"/>
+				</ImageView>
+			</graphic>
+		</Button>
+		<Button contentDisplay="GRAPHIC_ONLY" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+		        minWidth="-Infinity" mnemonicParsing="false" onAction="#onRemoveAction" prefHeight="27.0"
+		        prefWidth="27.0" text="Remove">
+			<graphic>
+				<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+					<Image url="@remove.png"/>
+				</ImageView>
+			</graphic>
+		</Button>
+		<Button contentDisplay="GRAPHIC_ONLY" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+		        minWidth="-Infinity" mnemonicParsing="false" onAction="#onEditAction" prefHeight="27.0" prefWidth="27.0"
+		        text="Edit">
+			<graphic>
+				<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+					<Image url="@edit.png"/>
+				</ImageView>
+			</graphic>
+		</Button>
+	</HBox>
+	<TableView fx:id="table">
+		<columns>
+			<TableColumn fx:id="enableColumn" prefWidth="32.0" text="✓"/>
+			<TableColumn fx:id="typeColumn" prefWidth="75.0" text="Type"/>
+			<TableColumn fx:id="remoteAddressColumn" prefWidth="120.0" text="Remote Address"/>
+			<TableColumn fx:id="localFileColumn" prefWidth="200.0" text="Local File"/>
+			<TableColumn fx:id="remoteFileColumn" prefWidth="200.0" text="Remote File"/>
+			<TableColumn fx:id="statusColumn" prefWidth="50.0" text="Status"/>
+		</columns>
+	</TableView>
+</VBox>
