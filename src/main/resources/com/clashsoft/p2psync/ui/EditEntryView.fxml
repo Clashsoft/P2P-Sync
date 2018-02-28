@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?><?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
+<GridPane hgap="5.0" prefHeight="150.0" prefWidth="420.0" vgap="5.0" xmlns="http://javafx.com/javafx/8.0.121"
+          xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.clashsoft.p2psync.ui.EditEntryViewController">
+	<columnConstraints>
+		<ColumnConstraints halignment="LEFT" hgrow="NEVER"/>
+		<ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" minWidth="10.0"/>
+	</columnConstraints>
+	<rowConstraints>
+		<RowConstraints valignment="BASELINE" vgrow="NEVER"/>
+		<RowConstraints valignment="BASELINE" vgrow="NEVER"/>
+		<RowConstraints valignment="BASELINE" vgrow="NEVER"/>
+		<RowConstraints valignment="BOTTOM" vgrow="ALWAYS"/>
+		<RowConstraints valignment="BOTTOM" vgrow="NEVER"/>
+	</rowConstraints>
+	<padding>
+		<Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+	</padding>
+	<Label text="Remote Address:"/>
+	<HBox alignment="BASELINE_RIGHT" spacing="5.0" GridPane.columnIndex="1">
+		<TextField fx:id="remoteAddressField" promptText="IP Address / Hostname" HBox.hgrow="ALWAYS"/>
+		<Label text=":"/>
+		<TextField fx:id="remotePortField" prefWidth="90.0" promptText="Port" HBox.hgrow="NEVER"/>
+	</HBox>
+	<Label text="Local Path:" GridPane.rowIndex="1"/>
+	<HBox alignment="BASELINE_RIGHT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+		<TextField fx:id="localPathField" promptText="Path" HBox.hgrow="ALWAYS"/>
+		<Button mnemonicParsing="false" onAction="#onBrowseAction" text="..."/>
+	</HBox>
+	<Label text="Remote Path:" GridPane.rowIndex="2"/>
+	<TextField fx:id="remotePathField" promptText="Path" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+	<Separator GridPane.columnSpan="2147483647" GridPane.rowIndex="3"/>
+	<Button cancelButton="true" focusTraversable="false" mnemonicParsing="false" onAction="#onCancelAction"
+	        prefWidth="100.0" text="Cancel" GridPane.rowIndex="4"/>
+	<Button defaultButton="true" mnemonicParsing="false" onAction="#onOKAction" prefWidth="100.0" text="OK"
+	        GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+</GridPane>
