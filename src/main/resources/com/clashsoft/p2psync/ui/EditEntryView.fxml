@@ -18,21 +18,26 @@
 		<Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
 	</padding>
 	<Label text="Remote Address:"/>
-	<HBox alignment="BASELINE_RIGHT" spacing="5.0" GridPane.columnIndex="1">
+	<HBox alignment="BASELINE_RIGHT" spacing="2.0" GridPane.columnIndex="1">
 		<TextField fx:id="remoteAddressField" promptText="IP Address / Hostname" HBox.hgrow="ALWAYS"/>
 		<Label text=":"/>
 		<TextField fx:id="remotePortField" prefWidth="90.0" promptText="Port" HBox.hgrow="NEVER"/>
 	</HBox>
 	<Label text="Local Path:" GridPane.rowIndex="1"/>
-	<HBox alignment="BASELINE_RIGHT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+	<HBox alignment="BASELINE_RIGHT" spacing="2.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
 		<TextField fx:id="localPathField" promptText="Path" HBox.hgrow="ALWAYS"/>
-		<Button mnemonicParsing="false" onAction="#onBrowseAction" text="..."/>
+		<Button maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+		        mnemonicParsing="false" onAction="#onBrowseFileAction" prefHeight="27.0" prefWidth="27.0"
+		        text="Browse File"/>
+		<Button maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+		        mnemonicParsing="false" onAction="#onBrowseDirectoryAction" prefHeight="27.0" prefWidth="27.0"
+		        text="Browse Directory"/>
 	</HBox>
 	<Label text="Remote Path:" GridPane.rowIndex="2"/>
 	<TextField fx:id="remotePathField" promptText="Path" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 	<Separator GridPane.columnSpan="2147483647" GridPane.rowIndex="3"/>
 	<Button cancelButton="true" focusTraversable="false" mnemonicParsing="false" onAction="#onCancelAction"
 	        prefWidth="100.0" text="Cancel" GridPane.rowIndex="4"/>
-	<Button defaultButton="true" mnemonicParsing="false" onAction="#onOKAction" prefWidth="100.0" text="OK"
-	        GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+	<Button fx:id="okButton" defaultButton="true" mnemonicParsing="false" onAction="#onOKAction" prefWidth="100.0"
+	        text="OK" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
 </GridPane>
